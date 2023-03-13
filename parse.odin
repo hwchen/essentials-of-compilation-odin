@@ -49,10 +49,11 @@ lex :: proc(src: string) -> [dynamic]Token {
                     idx += 1
                     continue
                 case:
+                    idx -= 1
                     break num_loop
                 }
             }
-            append(&toks, Token{kind = .Number, start = start, end = idx})
+            append(&toks, Token{kind = .Number, start = start, end = idx + 1})
         case 'a' ..= 'z', 'A' ..= 'Z', '_':
             start := idx
             word_loop: for idx < len(src) {
@@ -61,16 +62,18 @@ lex :: proc(src: string) -> [dynamic]Token {
                     idx += 1
                     continue
                 case:
+                    idx -= 1
                     break word_loop
                 }
             }
-            switch src[start:idx] {
+            end := idx + 1
+            switch src[start:end] {
             case "print":
-                append(&toks, Token{kind = .Print, start = start, end = idx})
+                append(&toks, Token{kind = .Print, start = start, end = end})
             case "input_int":
-                append(&toks, Token{kind = .InputInt, start = start, end = idx})
+                append(&toks, Token{kind = .InputInt, start = start, end = end})
             case:
-                append(&toks, Token{kind = .Ident, start = start, end = idx})
+                append(&toks, Token{kind = .Ident, start = start, end = end})
             }
         // TODO
         case:

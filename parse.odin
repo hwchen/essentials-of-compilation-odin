@@ -49,10 +49,10 @@ lex :: proc(src: string) -> [dynamic]Token {
                     idx += 1
                     continue
                 case:
-                    idx -= 1
                     break num_loop
                 }
             }
+            idx -= 1
             append(&toks, Token{kind = .Number, start = start, end = idx + 1})
         case 'a' ..= 'z', 'A' ..= 'Z', '_':
             start := idx
@@ -62,10 +62,10 @@ lex :: proc(src: string) -> [dynamic]Token {
                     idx += 1
                     continue
                 case:
-                    idx -= 1
                     break word_loop
                 }
             }
+            idx -= 1
             end := idx + 1
             switch src[start:end] {
             case "print":
@@ -83,7 +83,7 @@ lex :: proc(src: string) -> [dynamic]Token {
 }
 
 @(test)
-smoke_test_lexer :: proc(t: ^testing.T) {
+smoke_test_lexer_1 :: proc(t: ^testing.T) {
     src := "a = 1 + (input_int() - 3);"
     toks := lex(src)
 
@@ -101,6 +101,13 @@ smoke_test_lexer :: proc(t: ^testing.T) {
     testing.expect_value(t, toks[11].kind, TokenKind.Semicolon)
 }
 
+@(test)
+smoke_test_lexer_2 :: proc(t: ^testing.T) {
+    src := "a + b"
+    toks := lex(src)
+    testing.expect_value(t, src[toks[0].start:toks[0].end], "a")
+    testing.expect_value(t, src[toks[2].start:toks[2].end], "b")
+}
 Ast :: struct {
     stmts: [dynamic]Stmt,
 }

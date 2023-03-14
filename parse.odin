@@ -169,15 +169,18 @@ parse_expr :: proc(state: ^ParseState) -> (expr: Expr, err: ParseError) {
 }
 
 expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError) {
-    fmt.println("hit expr_bp", state.curr)
+    fmt.println("ENTER expr_bp", state.curr)
     lhs: Expr
     #partial switch tok := consume_tok(state); tok.kind {
     case .Number:
+        fmt.println("  SWITCH NUMBER expr_bp", state.curr)
         n, _ := strconv.parse_int(tok_slice(tok, state))
         lhs = transmute(Number)n
     case .Ident:
+        fmt.println("  SWITCH IDENT expr_bp", state.curr)
         lhs = transmute(Variable)tok_slice(tok, state)
     case .Plus, .Minus:
+        fmt.println("  SWITCH OP expr_bp", state.curr)
         rhs, _ := expr_bp(state, 5)
         rhs_ptr := new(Expr)
         rhs_ptr^ = rhs
@@ -193,32 +196,30 @@ expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError
     }
 
     for {
-        fmt.println("  hit expr_bp loop", state.curr)
+        fmt.println("  LOOP expr_bp", state.curr, lhs)
         if is_eof(state) || match_tok(.Semicolon, state) do break
 
-        op := consume_tok(state)
         // hardcode here, since we only need binding power for +-
         l_bp := 1
         r_bp := 2
 
         if l_bp < min_bp do break
 
-        // TODO need to alloc for nodes
+        op := consume_tok(state)
+        fmt.println("  LOOP OP expr_bp", state.curr, op)
+
         rhs := expr_bp(state, r_bp) or_return
         rhs_ptr := new(Expr)
         rhs_ptr^ = rhs
         lhs_ptr := new(Expr)
         lhs_ptr^ = lhs
         lhs = BinaryOp {
-            // interesting, can't assign directly as the main assign happens
-            // before this assign
             lhs = lhs_ptr,
             op  = tok2op(op.kind),
             rhs = rhs_ptr,
         }
-        fmt.println("lhs:", lhs)
     }
-    fmt.println("  hit expr_bp loop break", state.curr)
+    fmt.println("  LOOP EXIT expr_bp", state.curr, lhs)
 
     return lhs, nil
 }
@@ -230,6 +231,7 @@ tok2op :: proc(op: TokenKind) -> Op {
     case .Minus:
         return .Sub
     case:
+        fmt.println(op)
         panic("Token is not an op")
     }
 }
@@ -279,13 +281,17 @@ test_parse_expr :: proc(t: ^testing.T) {
         ast, _ := parse("1+1;")
         testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 1))")
     }
-    //{
-    //    ast, _ := parse("1+1 - 1;")
-    //    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ (- 1 1) 1))")
-    //}
+    {
+        ast, _ := parse("1+2-3;")
+        testing.expect_value(t, ast_debug(ast), "(StmtExpr (- (+ 1 2) 3))")
+    }
     //{
     //    ast, _ := parse("1+(1 - 1);")
     //    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (- 1 1))")
+    //}
+    //{
+    //    ast, _ := parse("1+ -1);")
+    //    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (- 1))")
     //}
 }
 

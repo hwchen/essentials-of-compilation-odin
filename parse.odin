@@ -5,6 +5,8 @@ import "core:strconv"
 import "core:strings"
 import "core:testing"
 
+// Lexer ===================
+
 Token :: struct {
     kind:  TokenKind,
     start: int,
@@ -110,6 +112,8 @@ smoke_test_lexer_2 :: proc(t: ^testing.T) {
     testing.expect_value(t, src[toks[0].start:toks[0].end], "a")
     testing.expect_value(t, src[toks[2].start:toks[2].end], "b")
 }
+
+// Parser ===================
 
 ParseError :: enum {
     UnexpectedToken,
@@ -271,9 +275,21 @@ is_eof :: proc(state: ^ParseState) -> bool {
 
 @(test)
 test_parse_expr :: proc(t: ^testing.T) {
-    ast, _ := parse("1+1;")
-    testing.expect_value(t, ast_debug(ast), "Stmt Expr: 1 + 1 ;")
+    {
+        ast, _ := parse("1+1;")
+        testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 1))")
+    }
+    //{
+    //    ast, _ := parse("1+1 - 1;")
+    //    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ (- 1 1) 1))")
+    //}
+    //{
+    //    ast, _ := parse("1+(1 - 1);")
+    //    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (- 1 1))")
+    //}
 }
+
+// AST ===================
 
 Ast :: struct {
     stmts: [dynamic]Stmt,
@@ -322,7 +338,6 @@ ast_debug :: proc(ast: Ast) -> string {
     buf := strings.builder_make_none()
     for stmt in ast.stmts {
         stmt_debug(&buf, stmt)
-        fmt.sbprintf(&buf, " ;")
     }
     return strings.to_string(buf)
 }
@@ -330,14 +345,17 @@ ast_debug :: proc(ast: Ast) -> string {
 stmt_debug :: proc(buf: ^strings.Builder, stmt: Stmt) {
     switch s in stmt {
     case StmtPrint:
-        fmt.sbprintf(buf, "Stmt Print: ")
+        fmt.sbprintf(buf, "(StmtPrint ")
         expr_debug(buf, transmute(Expr)s)
+        fmt.sbprintf(buf, ")")
     case StmtExpr:
-        fmt.sbprintf(buf, "Stmt Expr: ")
+        fmt.sbprintf(buf, "(StmtExpr ")
         expr_debug(buf, transmute(Expr)s)
+        fmt.sbprintf(buf, ")")
     case StmtAssign:
-        fmt.sbprintf(buf, "Stmt Assign: %s", s.variable)
+        fmt.sbprintf(buf, "(StmtAssign %s ", s.variable)
         expr_debug(buf, s.expr)
+        fmt.sbprintf(buf, ")", s.variable)
     }
 }
 
@@ -348,20 +366,25 @@ expr_debug :: proc(buf: ^strings.Builder, expr: Expr) {
     case Variable:
         fmt.sbprintf(buf, "%s", e)
     case BinaryOp:
+        fmt.sbprintf(buf, "(")
+        op_debug(buf, e.op)
+        fmt.sbprintf(buf, " ")
         expr_debug(buf, e.lhs^)
         fmt.sbprintf(buf, " ")
+        expr_debug(buf, e.rhs^)
+        fmt.sbprintf(buf, ")")
+    case UnaryOp:
+        fmt.sbprintf(buf, "(")
         op_debug(buf, e.op)
         fmt.sbprintf(buf, " ")
-        expr_debug(buf, e.rhs^)
-    case UnaryOp:
-        op_debug(buf, e.op)
         expr_debug(buf, e.expr^)
+        fmt.sbprintf(buf, ")")
     case Group:
-        fmt.sbprintf(buf, "( ")
+        fmt.sbprintf(buf, "(Group ")
         expr_debug(buf, e^)
         fmt.sbprintf(buf, " )")
     case InputInt:
-        fmt.sbprintf(buf, "input_int")
+        fmt.sbprintf(buf, "(input_int)")
     }
 }
 

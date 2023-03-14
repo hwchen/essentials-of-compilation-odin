@@ -272,11 +272,11 @@ curr_tok_slice :: proc(state: ^ParseState) -> string {
 }
 
 is_eof :: proc(state: ^ParseState) -> bool {
-    return state.curr >= len(state.src)
+    return state.curr >= len(state.toks)
 }
 
 @(test)
-test_parse_expr :: proc(t: ^testing.T) {
+test_parse_expr_basic :: proc(t: ^testing.T) {
     {
         ast, _ := parse("1+1;")
         testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 1))")

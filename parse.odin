@@ -140,6 +140,7 @@ parse :: proc(src: string) -> (ast: Ast, err: ParseError) {
         append(&stmts, parse_stmt(&state) or_return)
         fmt.println("stmt appended")
         consume_expect_tok(.Semicolon, &state) or_return
+        fmt.println("semicolon consumed", state.curr)
     }
 
     return Ast{stmts = stmts}, nil
@@ -197,7 +198,7 @@ expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError
 
     for {
         fmt.println("  LOOP expr_bp", state.curr, lhs)
-        if is_eof(state) || match_tok(.Semicolon, state) do break
+        if is_eof(state) || match_tok(.Semicolon, state) || match_tok(.RParen, state) do break
 
         // hardcode here, since we only need binding power for +-
         l_bp := 1
@@ -285,15 +286,17 @@ test_parse_expr_basic :: proc(t: ^testing.T) {
         ast, _ := parse("1+2-3;")
         testing.expect_value(t, ast_debug(ast), "(StmtExpr (- (+ 1 2) 3))")
     }
-    //{
-    //    ast, _ := parse("1+(1 - 1);")
-    //    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (- 1 1))")
-    //}
-    //{
-    //    ast, _ := parse("1+ -1);")
-    //    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (- 1))")
-    //}
 }
+
+@(test)
+test_parse_expr_group :: proc(t: ^testing.T) {
+    ast, _ := parse("1+((1 + 1) - 1);")
+    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (- (+ 1 1) 1)))")
+}
+//{
+//    ast, _ := parse("1+ -1);")
+//    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (- 1))")
+//}
 
 // AST ===================
 

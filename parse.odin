@@ -182,15 +182,19 @@ expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError
         lhs = transmute(Variable)tok_slice(tok, state)
     case .Plus, .Minus:
         fmt.println("  SWITCH OP expr_bp", state.curr)
-        rhs, _ := expr_bp(state, 5)
-        rhs_ptr := new(Expr)
-        rhs_ptr^ = rhs
+        expr, _ := expr_bp(state, 5)
+        expr_ptr := new(Expr)
+        expr_ptr^ = expr
         lhs = UnaryOp {
             op   = tok2op(tok.kind),
-            expr = rhs_ptr,
+            expr = expr_ptr,
         }
     case .LParen:
-        lhs, _ = expr_bp(state, 0)
+        fmt.println("  SWITCH OP expr_bp", state.curr)
+        expr, _ := expr_bp(state, 0)
+        expr_ptr := new(Expr)
+        expr_ptr^ = expr
+        lhs = transmute(Group)expr_ptr
         consume_expect_tok(.RParen, state) or_return
     case:
         return nil, ParseError.UnexpectedToken
@@ -291,7 +295,7 @@ test_parse_expr_basic :: proc(t: ^testing.T) {
 @(test)
 test_parse_expr_group :: proc(t: ^testing.T) {
     ast, _ := parse("1+((1 + 1) - 1);")
-    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (- (+ 1 1) 1)))")
+    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (Group (- (Group (+ 1 1)) 1))))")
 }
 //{
 //    ast, _ := parse("1+ -1);")
@@ -391,7 +395,7 @@ expr_debug :: proc(buf: ^strings.Builder, expr: Expr) {
     case Group:
         fmt.sbprintf(buf, "(Group ")
         expr_debug(buf, e^)
-        fmt.sbprintf(buf, " )")
+        fmt.sbprintf(buf, ")")
     case InputInt:
         fmt.sbprintf(buf, "(input_int)")
     }

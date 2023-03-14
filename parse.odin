@@ -297,10 +297,12 @@ test_parse_expr_group :: proc(t: ^testing.T) {
     ast, _ := parse("1+((1 + 1) - 1);")
     testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (Group (- (Group (+ 1 1)) 1))))")
 }
-//{
-//    ast, _ := parse("1+ -1);")
-//    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (- 1))")
-//}
+@(test)
+test_parse_expr_unary :: proc(t: ^testing.T) {
+    ast, _ := parse("1+ -1;")
+    fmt.println(ast)
+    testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (- 1)))")
+}
 
 // AST ===================
 

@@ -1,6 +1,7 @@
 package ess
 
 import "core:fmt"
+import "core:log"
 import "core:strconv"
 import "core:strings"
 import "core:testing"
@@ -136,11 +137,11 @@ parse :: proc(src: string) -> (ast: Ast, err: ParseError) {
 
     stmts := make([dynamic]Stmt, 0)
     for !is_eof(&state) {
-        fmt.println("curr at beginning of stmt parse:", state.curr)
+        log.debug("curr at beginning of stmt parse:", state.curr)
         append(&stmts, parse_stmt(&state) or_return)
-        fmt.println("stmt appended")
+        log.debug("stmt appended")
         consume_expect_tok(.Semicolon, &state) or_return
-        fmt.println("semicolon consumed", state.curr)
+        log.debug("semicolon consumed", state.curr)
     }
 
     return Ast{stmts = stmts}, nil
@@ -171,18 +172,18 @@ parse_expr :: proc(state: ^ParseState) -> (expr: Expr, err: ParseError) {
 }
 
 expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError) {
-    fmt.println("ENTER expr_bp", state.curr)
+    log.debug("ENTER expr_bp", state.curr)
     lhs: Expr
     #partial switch tok := consume_tok(state); tok.kind {
     case .Number:
-        fmt.println("  SWITCH NUMBER expr_bp", state.curr)
+        log.debug("  SWITCH NUMBER expr_bp", state.curr)
         n, _ := strconv.parse_int(tok_slice(tok, state))
         lhs = transmute(Number)n
     case .Ident:
-        fmt.println("  SWITCH IDENT expr_bp", state.curr)
+        log.debug("  SWITCH IDENT expr_bp", state.curr)
         lhs = transmute(Variable)tok_slice(tok, state)
     case .Plus, .Minus:
-        fmt.println("  SWITCH OP expr_bp", state.curr)
+        log.debug("  SWITCH OP expr_bp", state.curr)
         expr, _ := expr_bp(state, 5)
         expr_ptr := new(Expr)
         expr_ptr^ = expr
@@ -191,7 +192,7 @@ expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError
             expr = expr_ptr,
         }
     case .LParen:
-        fmt.println("  SWITCH OP expr_bp", state.curr)
+        log.debug("  SWITCH OP expr_bp", state.curr)
         expr, _ := expr_bp(state, 0)
         expr_ptr := new(Expr)
         expr_ptr^ = expr
@@ -206,7 +207,7 @@ expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError
     }
 
     for {
-        fmt.println("  LOOP expr_bp", state.curr, lhs)
+        log.debug("  LOOP expr_bp", state.curr, lhs)
         if is_eof(state) || match_tok(.Semicolon, state) || match_tok(.RParen, state) do break
 
         // hardcode here, since we only need binding power for +-
@@ -216,7 +217,7 @@ expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError
         if l_bp < min_bp do break
 
         op := consume_tok(state)
-        fmt.println("  LOOP OP expr_bp", state.curr, op)
+        log.debug("  LOOP OP expr_bp", state.curr, op)
 
         rhs := expr_bp(state, r_bp) or_return
         rhs_ptr := new(Expr)
@@ -229,7 +230,7 @@ expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError
             rhs = rhs_ptr,
         }
     }
-    fmt.println("  LOOP EXIT expr_bp", state.curr, lhs)
+    log.debug("  LOOP EXIT expr_bp", state.curr, lhs)
 
     return lhs, nil
 }
@@ -241,7 +242,7 @@ tok2op :: proc(op: TokenKind) -> Op {
     case .Minus:
         return .Sub
     case:
-        fmt.println(op)
+        log.debug(op)
         panic("Token is not an op")
     }
 }
@@ -312,21 +313,20 @@ test_parse_expr_unary :: proc(t: ^testing.T) {
 @(test)
 test_parse_stmt_assign :: proc(t: ^testing.T) {
     ast, _ := parse("a = 1;")
-    fmt.println(ast)
     testing.expect_value(t, ast_debug(ast), "(StmtAssign a 1)")
 }
 
 @(test)
 test_parse_stmt_print :: proc(t: ^testing.T) {
     ast, _ := parse("print(1);")
-    fmt.println(ast)
     testing.expect_value(t, ast_debug(ast), "(StmtPrint 1)")
 }
 
 @(test)
 test_parse_expr_input_int :: proc(t: ^testing.T) {
+    //context.logger = log.create_console_logger(lowest = .Debug, ident = "test")
     ast, _ := parse("a = input_int();")
-    fmt.println(ast)
+    log.debug(ast)
     testing.expect_value(t, ast_debug(ast), "(StmtAssign a input_int)")
 }
 

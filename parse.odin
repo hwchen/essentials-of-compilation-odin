@@ -197,6 +197,10 @@ expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError
         expr_ptr^ = expr
         lhs = transmute(Group)expr_ptr
         consume_expect_tok(.RParen, state) or_return
+    case .InputInt:
+        lhs = transmute(InputInt){}
+        consume_expect_tok(.LParen, state) or_return
+        consume_expect_tok(.RParen, state) or_return
     case:
         return nil, ParseError.UnexpectedToken
     }
@@ -319,6 +323,13 @@ test_parse_stmt_print :: proc(t: ^testing.T) {
     testing.expect_value(t, ast_debug(ast), "(StmtPrint 1)")
 }
 
+@(test)
+test_parse_expr_input_int :: proc(t: ^testing.T) {
+    ast, _ := parse("a = input_int();")
+    fmt.println(ast)
+    testing.expect_value(t, ast_debug(ast), "(StmtAssign a input_int)")
+}
+
 // AST ===================
 
 Ast :: struct {
@@ -357,7 +368,7 @@ UnaryOp :: struct {
     expr: ^Expr,
 }
 Group :: distinct ^Expr
-InputInt :: distinct bool // void type, bool is not use
+InputInt :: struct {}
 
 Op :: enum {
     Add,
@@ -414,7 +425,7 @@ expr_debug :: proc(buf: ^strings.Builder, expr: Expr) {
         expr_debug(buf, e^)
         fmt.sbprintf(buf, ")")
     case InputInt:
-        fmt.sbprintf(buf, "(input_int)")
+        fmt.sbprintf(buf, "input_int")
     }
 }
 

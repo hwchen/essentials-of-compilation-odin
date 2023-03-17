@@ -300,10 +300,15 @@ test_parse_expr_group :: proc(t: ^testing.T) {
 @(test)
 test_parse_expr_unary :: proc(t: ^testing.T) {
     ast, _ := parse("1+ -1;")
-    fmt.println(ast)
     testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (- 1)))")
 }
 
+@(test)
+test_parse_stmt_assign :: proc(t: ^testing.T) {
+    ast, _ := parse("a = 1;")
+    fmt.println(ast)
+    testing.expect_value(t, ast_debug(ast), "(StmtAssign a 1)")
+}
 // AST ===================
 
 Ast :: struct {
@@ -370,7 +375,7 @@ stmt_debug :: proc(buf: ^strings.Builder, stmt: Stmt) {
     case StmtAssign:
         fmt.sbprintf(buf, "(StmtAssign %s ", s.variable)
         expr_debug(buf, s.expr)
-        fmt.sbprintf(buf, ")", s.variable)
+        fmt.sbprintf(buf, ")")
     }
 }
 

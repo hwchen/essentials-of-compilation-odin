@@ -148,6 +148,7 @@ parse :: proc(src: string) -> (ast: Ast, err: ParseError) {
 
 parse_stmt :: proc(state: ^ParseState) -> (stmt: Stmt, err: ParseError) {
     if match_tok(.Print, state) {
+        consume_expect_tok(.Print, state) or_return
         consume_expect_tok(.LParen, state) or_return
         expr := parse_expr(state) or_return
         consume_expect_tok(.RParen, state) or_return
@@ -297,6 +298,7 @@ test_parse_expr_group :: proc(t: ^testing.T) {
     ast, _ := parse("1+((1 + 1) - 1);")
     testing.expect_value(t, ast_debug(ast), "(StmtExpr (+ 1 (Group (- (Group (+ 1 1)) 1))))")
 }
+
 @(test)
 test_parse_expr_unary :: proc(t: ^testing.T) {
     ast, _ := parse("1+ -1;")
@@ -309,6 +311,14 @@ test_parse_stmt_assign :: proc(t: ^testing.T) {
     fmt.println(ast)
     testing.expect_value(t, ast_debug(ast), "(StmtAssign a 1)")
 }
+
+@(test)
+test_parse_stmt_print :: proc(t: ^testing.T) {
+    ast, _ := parse("print(1);")
+    fmt.println(ast)
+    testing.expect_value(t, ast_debug(ast), "(StmtPrint 1)")
+}
+
 // AST ===================
 
 Ast :: struct {

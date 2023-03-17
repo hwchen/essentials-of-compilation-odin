@@ -41,7 +41,7 @@ parse_stmt :: proc(state: ^ParseState) -> (stmt: Stmt, err: ParseError) {
         consume_expect_tok(.LParen, state) or_return
         expr := parse_expr(state) or_return
         consume_expect_tok(.RParen, state) or_return
-        return transmute(StmtPrint)expr, nil
+        return StmtPrint(expr), nil
     } else if peek_match_tok(.Eq, state) {
         // We only need to lookahead one tok, since we've lexed Eq and DoubleEq as separate toks
         variable := curr_tok_slice(state)
@@ -50,7 +50,7 @@ parse_stmt :: proc(state: ^ParseState) -> (stmt: Stmt, err: ParseError) {
         return StmtAssign{variable = variable, expr = expr}, nil
     } else {
         expr := parse_expr(state) or_return
-        return transmute(StmtExpr)expr, nil
+        return StmtExpr(expr), nil
     }
 }
 
@@ -66,10 +66,10 @@ expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError
     case .Number:
         log.debug("  SWITCH NUMBER expr_bp", state.curr)
         n, _ := strconv.parse_int(tok_slice(tok, state))
-        lhs = transmute(Number)n
+        lhs = Number(n)
     case .Ident:
         log.debug("  SWITCH IDENT expr_bp", state.curr)
-        lhs = transmute(Variable)tok_slice(tok, state)
+        lhs = Variable(tok_slice(tok, state))
     case .Plus, .Minus:
         log.debug("  SWITCH OP expr_bp", state.curr)
         expr, _ := expr_bp(state, 5)
@@ -84,10 +84,10 @@ expr_bp :: proc(state: ^ParseState, min_bp: int) -> (expr: Expr, err: ParseError
         expr, _ := expr_bp(state, 0)
         expr_ptr := new(Expr)
         expr_ptr^ = expr
-        lhs = transmute(Group)expr_ptr
+        lhs = Group(expr_ptr)
         consume_expect_tok(.RParen, state) or_return
     case .InputInt:
-        lhs = transmute(InputInt){}
+        lhs = InputInt({})
         consume_expect_tok(.LParen, state) or_return
         consume_expect_tok(.RParen, state) or_return
     case:

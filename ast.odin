@@ -58,11 +58,11 @@ stmt_debug :: proc(buf: ^strings.Builder, stmt: Stmt) {
     switch s in stmt {
     case StmtPrint:
         fmt.sbprintf(buf, "(StmtPrint ")
-        expr_debug(buf, transmute(Expr)s)
+        expr_debug(buf, Expr(s))
         fmt.sbprintf(buf, ")")
     case StmtExpr:
         fmt.sbprintf(buf, "(StmtExpr ")
-        expr_debug(buf, transmute(Expr)s)
+        expr_debug(buf, Expr(s))
         fmt.sbprintf(buf, ")")
     case StmtAssign:
         fmt.sbprintf(buf, "(StmtAssign %s ", s.variable)

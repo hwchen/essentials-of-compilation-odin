@@ -13,7 +13,7 @@ main :: proc() {
     }
 
     data, _ := os.read_entire_file(filepath)
-    src := transmute(string)data
+    src := string(data)
 
     ast, _ := parse(src)
     fmt.println(ast_debug(ast))

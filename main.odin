@@ -1,10 +1,14 @@
 package ess
 
 import "core:bufio"
-import "core:os"
 import "core:fmt"
+import "core:mem"
+import "core:os"
 
 main :: proc() {
+    context.allocator = context.temp_allocator
+    defer free_all()
+
     filepath: string
     if len(os.args) == 0 {
         panic("Must supply filepath arg")

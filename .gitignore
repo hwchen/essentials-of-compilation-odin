@@ -1,4 +1,5 @@
 *.bin
+essentials-of-compilation
 scratch
 .direnv
 .envrc
